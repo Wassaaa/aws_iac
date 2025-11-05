@@ -1,0 +1,38 @@
+# Nix
+.direnv/
+result
+result-*
+
+# Node
+node_modules/
+*.log
+npm-debug.log*
+
+# CDK
+cdk.out/
+.cdk.staging/
+cdk.context.json
+
+# TypeScript
+*.js
+*.d.ts
+!jest.config.js
+*.tsbuildinfo
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# AWS
+.aws/
+
+# Environment
+.env
+.env.local

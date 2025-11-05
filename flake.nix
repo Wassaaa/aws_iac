@@ -8,9 +8,9 @@
 
   outputs =
     {
-      self,
       nixpkgs,
       flake-utils,
+      ...
     }:
     flake-utils.lib.eachDefaultSystem (
       system:
@@ -20,11 +20,8 @@
       {
         devShells.default = pkgs.mkShell {
           buildInputs = with pkgs; [
-            nodejs_18
-            nodePackages.npm
-            nodePackages.typescript
+            nodejs_24
             awscli2
-            nodePackages.aws-cdk
           ];
 
           shellHook = ''

@@ -1,0 +1,7 @@
+# Ignore the Dockerfile itself
+Dockerfile
+.dockerignore
+
+# Ignore Python cache files
+__pycache__/
+*.pyc

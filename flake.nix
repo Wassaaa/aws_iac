@@ -22,6 +22,9 @@
           buildInputs = with pkgs; [
             nodejs_24
             awscli2
+            python313
+            python313Packages.flask
+            python313Packages.pip
           ];
 
           shellHook = ''

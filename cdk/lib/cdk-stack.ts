@@ -15,6 +15,7 @@ export class CdkStack extends cdk.Stack {
       {
         cpu: 256, //0.25 of a vCPU
         memoryLimitMiB: 512,
+        desiredCount: 1,
         taskImageOptions: {
           // directory of the Dockerfile
           image: ecs.ContainerImage.fromAsset(
@@ -41,5 +42,14 @@ export class CdkStack extends cdk.Stack {
 
     // configure ALB to also use the custom healthcheck route
     fargate.targetGroup.configureHealthCheck({ path: "/health" });
+
+    // Optional: Enable auto-scaling
+    // const scaling = fargate.service.autoScaleTaskCount({
+    //   minCapacity: 1,
+    //   maxCapacity: 3,
+    // });
+    // scaling.scaleOnCpuUtilization("CpuScaling", {
+    //   targetUtilizationPercent: 70,
+    // });
   }
 }

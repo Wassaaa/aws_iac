@@ -1,173 +1,117 @@
-# Assignment 3: Deploy a Simple Web App with IaC
+# Deploy a Simple Web App with IaC
 
-This project uses AWS CDK (TypeScript) to deploy a simple Python Flask web application to AWS.
-
-The app runs in a Docker container on AWS Fargate with an Application Load Balancer (ALB) that makes it accessible from the internet.
+A simple web application with separate frontend and backend, deployed to AWS using Infrastructure as Code.
 
 ## Problem Interpretation and Approach
 
-**Technology choice:** AWS CDK with TypeScript (matches the preferred stack from the assignment)
+**Technology Stack:**
 
-**Why Fargate instead of Lambda?**
-
-For a simple, low-traffic app, AWS Lambda would be cheaper and easier. However, I chose Fargate because:
-
-- Quantitative applications (like pricing model APIs) often need to run continuously
-- Fargate handles long-running services better than Lambda
-- Shows understanding of containerized deployment patterns
-- More realistic for production workloads
+- **Frontend:** HTML/CSS/JavaScript (static files served by Flask)
+- **Backend:** Python Flask REST API
+- **Infrastructure:** AWS CDK (TypeScript)
+- **Deployment:** Docker container on AWS Fargate with Application Load Balancer
 
 **Architecture:**
 
-- Python Flask app in a Docker container
-- AWS Fargate (serverless containers - no EC2 servers to manage)
-- Application Load Balancer for public access
-- Two-layer health check system for high availability
+- Flask serves both static frontend and API endpoints
+- Frontend makes HTTP requests to backend API (demonstrates frontend <-> backend communication)
+- Containerized with Docker
+- Deployed to AWS Fargate (serverless containers - no EC2 management)
+- Application Load Balancer provides public access
+- Infrastructure fully defined as code for reproducible deployment
 
 ## Project Structure
 
 ```
-/app/           - Python Flask application
-  hello.py      - Main application code
-  Dockerfile    - Container build instructions
+/app/              - Application code
+  hello.py         - Flask backend and frontend serving
+  index.html       - Frontend HTML
+  Dockerfile       - Container build instructions
   requirements.txt - Python dependencies
-/cdk/           - AWS CDK infrastructure code (TypeScript)
-  lib/cdk-stack.ts - Stack definition
-  bin/cdk.ts    - CDK app entry point
+/cdk/              - Infrastructure as Code (AWS CDK)
+  lib/cdk-stack.ts - Stack definition (VPC, Fargate, ALB)
+  bin/cdk.ts       - CDK app entry point
 ```
 
 ## Build and Run Instructions
 
 ### Prerequisites
 
-- Node.js 24 (LTS) and npm
-- Docker Desktop (running)
-- AWS CLI installed
+- **AWS Account** (free tier: https://aws.amazon.com/free/)
+- **Node.js 24 (LTS)** and npm
+- **Docker Desktop** (running)
+- **AWS CLI** (https://aws.amazon.com/cli/)
 
-**Alternative (Nix users):** If you have the Nix package manager installed, you can use the included `flake.nix`:
+**Optional - Nix users:** Run `nix develop` to get all tools automatically.
+
+### Setup and Deploy
+
+**1. Configure AWS credentials:**
+
+Create an IAM user in AWS Console with `AdministratorAccess` policy (for testing - use least-privilege for production).
 
 ```bash
-nix develop
+aws configure
 ```
 
-This automatically provides Node.js 24 and AWS CLI in a reproducible environment.
+Enter your Access Key ID, Secret Access Key, and preferred region (e.g., `eu-north-1`).
 
-### Step 1: AWS Account Setup (One-time)
+**2. Install dependencies and bootstrap CDK:**
 
-1. **Create AWS Account:** Sign up at aws.amazon.com
+```bash
+cd cdk
+npm install
+npx cdk bootstrap  # One-time per AWS account/region
+```
 
-2. **Create IAM User:**
+**3. Deploy:**
 
-   - Open AWS Console → IAM service
-   - Create new User
-   - Attach policy: `AdministratorAccess` (Note: This gives full access - only for testing. For production, use limited permissions.)
-   - Save the `Access Key ID` and `Secret Access Key`
+```bash
+npx cdk deploy
+```
 
-3. **Configure AWS CLI:**
-   ```bash
-   aws configure
-   ```
-   Enter your Access Key ID and Secret Access Key when asked.
-   Choose a region (e.g., `eu-north-1` for Stockholm)
+This builds the Docker image, pushes it to ECR, and creates all AWS resources (VPC, Fargate service, Load Balancer). Takes ~5-10 minutes.
 
-### Step 2: Deploy
+**4. Test:**
 
-1. **Navigate to CDK directory:**
+After deployment completes, look for the ALB URL in the terminal output:
 
-   ```bash
-   cd cdk
-   ```
+```
+Outputs:
+CdkStack.opfargateServiceURL = http://[your-alb-url]
+```
 
-2. **Install dependencies:**
+Open the URL in your browser to see the frontend, which makes requests to the backend API.
 
-   ```bash
-   npm install
-   ```
-
-3. **Bootstrap CDK (one-time per AWS account/region):**
-
-   ```bash
-   npx cdk bootstrap
-   ```
-
-   This creates the S3 buckets and IAM roles that CDK needs.
-
-4. **Deploy the stack:**
-
-   ```bash
-   npx cdk deploy
-   ```
-
-   This will:
-
-   - Build the Docker image locally
-   - Push it to AWS ECR (container registry)
-   - Create VPC, Load Balancer, Fargate service
-   - Takes about 5-10 minutes
-
-5. **Test the application:**
-   - Look for `Outputs:` in the terminal after deployment finishes
-   - Copy the URL
-   - Open it in your browser or use curl:
-     ```bash
-     curl http://[your-url]
-     ```
-   - You should see JSON: `{"message":"Hello from my Fargate container!","timestamp":"..."}`
-   - Health check endpoint: `http://[your-url]/health`
-
-### Step 3: Clean Up
-
-**Important:** To delete all AWS resources and stop charges:
+**5. Tear down (important to avoid charges):**
 
 ```bash
 npx cdk destroy
 ```
 
-Confirm with 'y' when asked.
+Confirm with 'y'. This deletes all AWS resources.
 
-## Assumptions, Trade-offs, and Design Decisions
+## Assumptions, Trade-offs, and Known Limitations
 
-### Two-Layer Health Check System
+**Assumptions:**
 
-This deployment uses two health checks on the `/health` endpoint:
+- Using AWS free tier resources where possible
+- Single region deployment
+- HTTP (not HTTPS) for simplicity
 
-1. **ALB Health Check** (configured via `targetGroup.configureHealthCheck`)
+**Trade-offs:**
 
-   - Purpose: Traffic routing decision
-   - If unhealthy: ALB stops sending traffic to the container
-   - Interval: 30 seconds
+- **Fargate over Lambda:** Chose Fargate for simplicity (single container serves both frontend and backend). Alternative would be S3+CloudFront for frontend and Lambda+API Gateway for backend, which is cheaper but more complex infrastructure.
+- **Monolithic container:** Frontend and backend in one container for simplicity. Production might separate these.
+- **Administrator IAM permissions:** For ease of setup. Production should use least-privilege policies.
 
-2. **ECS Health Check** (configured via `healthCheck` in task definition)
-   - Purpose: Container restart decision
-   - If unhealthy: ECS kills and replaces the container (self-healing)
-   - Uses `curl` command inside the container
+**Known Limitations:**
 
-**Why curl in Dockerfile?** The ECS health check runs `curl` inside the container, so I installed it with `apt-get install curl`. This is a standard approach for container health checks.
+- No HTTPS/custom domain
+- No CI/CD pipeline (manual deployment from local machine)
+- No monitoring/alerting (CloudWatch alarms)
+- Single task instance (`desiredCount: 1`) for cost efficiency - can be increased to 2+ for high availability across availability zones
+- No auto-scaling configured (code included but commented out in `cdk-stack.ts`)
+- No automated testing
 
-### Trade-offs
-
-**Chosen: Fargate**
-
-- ✅ Always-on, no cold starts
-- ✅ More realistic for production APIs
-- ❌ Higher cost (~\$5-10/month vs Lambda's near-$0 for low traffic)
-
-**Alternative: Lambda + API Gateway**
-
-- ✅ Much cheaper for low traffic
-- ✅ Auto-scales to zero
-- ❌ Cold start delays (100-500ms)
-- ❌ Less suitable for always-on services
-
-### Known Limitations
-
-- **No CI/CD pipeline:** Deployment is manual from local machine. For production, should use `aws-cdk-lib/pipelines` for automated deployments.
-- **No monitoring/alerting:** No CloudWatch alarms for errors or high latency.
-- **Single container:** No redundancy (minHealthyPercent: 100 means only one task). For production, should run multiple tasks.
-- **No custom domain:** Uses default ALB URL.
-- **Administrator access:** IAM setup uses full admin permissions for simplicity. Production should use least-privilege policies.
-
-### Testing
-
-- Manual testing via browser and curl
-- Health check endpoints verified via CloudWatch logs
+**Idempotency:** AWS CDK ensures idempotent deployments - re-running `cdk deploy` safely updates existing resources without breaking the stack.

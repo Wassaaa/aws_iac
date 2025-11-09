@@ -38,25 +38,37 @@ A simple web application with separate frontend and backend, deployed to AWS usi
 ### Prerequisites
 
 - **AWS Account** (free tier: https://aws.amazon.com/free/)
-- **Node.js 24 (LTS)** and npm
-- **Docker Desktop** (running)
-- **AWS CLI** (https://aws.amazon.com/cli/)
+- **Node.js 24 (LTS)** - https://nodejs.org/en/download
+- **Docker Desktop** - https://docs.docker.com/engine/install/
+- **AWS CLI** - https://aws.amazon.com/cli/
 
 **Optional - Nix users:** Run `nix develop` to get all tools automatically.
 
 ### Setup and Deploy
 
-**1. Configure AWS credentials:**
+**1. Create IAM user for AWS access:**
 
-Create an IAM user in AWS Console with `AdministratorAccess` policy (for testing - use least-privilege for production).
+In AWS Console:
+
+1. Search for **IAM** → **Users** (left sidebar) → **Create user**
+2. Username: `cdk-deploy` (or any name you prefer)
+3. Don't enable console access → **Next**
+4. **Attach policies directly** → search `AdministratorAccess` → tick it → **Next**
+5. **Create user**
+6. Click the new user → **Security credentials** tab → **Create access key**
+7. Use case: **Command Line Interface (CLI)** → tick acknowledgment → **Next**
+8. Skip description tag → **Create access key**
+9. **Save both Access Key ID and Secret Access Key** (you'll need them next)
+
+**2. Configure AWS CLI:**
 
 ```bash
 aws configure
 ```
 
-Enter your Access Key ID, Secret Access Key, and preferred region (e.g., `eu-north-1`).
+Enter your Access Key ID and Secret Access Key from step 1, and your preferred region (e.g., `eu-north-1`).
 
-**2. Install dependencies and bootstrap CDK:**
+**3. Install dependencies and bootstrap CDK:**
 
 ```bash
 cd cdk
@@ -64,7 +76,7 @@ npm install
 npx cdk bootstrap  # One-time per AWS account/region
 ```
 
-**3. Deploy:**
+**4. Deploy:**
 
 ```bash
 npx cdk deploy
@@ -72,7 +84,7 @@ npx cdk deploy
 
 This builds the Docker image, pushes it to ECR, and creates all AWS resources (VPC, Fargate service, Load Balancer). Takes ~5-10 minutes.
 
-**4. Test:**
+**5. Test:**
 
 After deployment completes, look for the ALB URL in the terminal output:
 
@@ -83,7 +95,7 @@ CdkStack.opfargateServiceURL = http://[your-alb-url]
 
 Open the URL in your browser to see the frontend, which makes requests to the backend API.
 
-**5. Tear down (important to avoid charges):**
+**6. Tear down (important to avoid charges):**
 
 ```bash
 npx cdk destroy

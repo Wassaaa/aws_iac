@@ -64,7 +64,7 @@ In AWS Console:
 6. Click the new user → **Security credentials** tab → **Create access key**
 7. Use case: **Command Line Interface (CLI)** → tick acknowledgment → **Next**
 8. Skip description tag → **Create access key**
-9. **Save both Access Key ID and Secret Access Key** (you'll need them next)
+9. **Save both Access Key ID and Secret Access Key** (you'll need them next, you can **never** see the secret key again after you click done)
 
 **2. Configure AWS CLI:**
 
@@ -72,7 +72,10 @@ In AWS Console:
 aws configure
 ```
 
-Enter your Access Key ID and Secret Access Key from step 1, and your preferred region (e.g., `eu-north-1`).
+1. Enter your **Access** Key ID, can see in step one
+2. Enter your **Secret** Access Key from step 1
+3. Enter your preferred region (e.g., `eu-north-1`)
+4. Enter 'json' for output format
 
 **3. Install dependencies and bootstrap CDK:**
 

@@ -91,6 +91,8 @@ npx cdk bootstrap  # One-time per AWS account/region
 npx cdk deploy
 ```
 
+Confirm with 'y' to allow the changes
+
 This builds the Docker image, pushes it to ECR, and creates all AWS resources (VPC, Fargate service, Load Balancer). Takes ~5-10 minutes.
 
 **5. Test:**

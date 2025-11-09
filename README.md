@@ -1,33 +1,39 @@
-# Deploy a Simple Web App with IaC
+# Simple Web Application Deployed with Infrastructure as Code
 
-A simple web application with separate frontend and backend, deployed to AWS using Infrastructure as Code.
+A web application demonstrating frontend-backend communication and AWS deployment automation. Features a portfolio risk calculator as a practical example use case.
 
 ## Problem Interpretation and Approach
 
 **Technology Stack:**
 
-- **Frontend:** HTML/CSS/JavaScript (static files served by Flask)
-- **Backend:** Python Flask REST API
+- **Frontend:** HTML/CSS/JavaScript single-page application
+- **Backend:** Python Flask REST API with C++ calculation engine
 - **Infrastructure:** AWS CDK (TypeScript)
 - **Deployment:** Docker container on AWS Fargate with Application Load Balancer
 
 **Architecture:**
 
-- Flask serves both static frontend and API endpoints
-- Frontend makes HTTP requests to backend API (demonstrates frontend <-> backend communication)
-- Containerized with Docker
-- Deployed to AWS Fargate (serverless containers - no EC2 management)
-- Application Load Balancer provides public access
 - Infrastructure fully defined as code for reproducible deployment
+- Multi-stage Docker build compiles C++ code and packages with Python runtime
+- Deployed to AWS Fargate (serverless containers)
+- Application Load Balancer provides public internet access
+- Frontend provides UI for portfolio risk calculations
+- JavaScript makes HTTP POST requests to Flask API (`/api/probit`)
+- Flask processes requests and calls C++ binary for calculations
 
 ## Project Structure
 
 ```
-/app/              - Application code
-  hello.py         - Flask backend and frontend serving
-  index.html       - Frontend HTML
-  Dockerfile       - Container build instructions
+/app/              - Web application
+  hello.py         - Flask REST API server
+  index.html       - Frontend single-page application
+  Dockerfile       - Multi-stage build (C++ compilation + Python runtime)
   requirements.txt - Python dependencies
+  probit/          - High-performance C++ calculation engine
+    src/
+      InverseCumulativeNormal.h - SIMD-optimized inverse normal CDF
+      probit_api.cpp            - CLI wrapper for web API
+    CMakeLists.txt - Build configuration
 /cdk/              - Infrastructure as Code (AWS CDK)
   lib/cdk-stack.ts - Stack definition (VPC, Fargate, ALB)
   bin/cdk.ts       - CDK app entry point
@@ -95,6 +101,14 @@ CdkStack.opfargateServiceURL = http://[your-alb-url]
 
 Open the URL in your browser to see the frontend, which makes requests to the backend API.
 
+**Example usage:**
+
+- Enter expected return (e.g., 8.0%)
+- Enter volatility (e.g., 15.0%)
+- Enter confidence level (e.g., 95.0%)
+- Click "Calculate Range"
+- Result: "With 95% confidence, your annual return will be between -16.67% and 32.67%"
+
 **6. Tear down (important to avoid charges):**
 
 ```bash
@@ -113,16 +127,17 @@ Confirm with 'y'. This deletes all AWS resources.
 
 **Trade-offs:**
 
-- **Fargate over Lambda:** Chose Fargate for simplicity (single container serves both frontend and backend). Alternative would be S3+CloudFront for frontend and Lambda+API Gateway for backend, which is cheaper but more complex infrastructure.
-- **Monolithic container:** Frontend and backend in one container for simplicity. Production might separate these.
+- **Fargate over Lambda:** Chose Fargate for simplicity (single container, no cold starts). Lambda+API Gateway would be cheaper for low traffic.
+- **Monolithic container:** Frontend and backend in one container for simplicity. Production might separate these (S3+CloudFront for frontend).
 - **Administrator IAM permissions:** For ease of setup. Production should use least-privilege policies.
+- **C++ for calculations:** Demonstrates integrating compiled code with web backend. Pure Python would be simpler.
 
 **Known Limitations:**
 
 - No HTTPS/custom domain
 - No CI/CD pipeline (manual deployment from local machine)
 - No monitoring/alerting (CloudWatch alarms)
-- Single task instance (`desiredCount: 1`) for cost efficiency - can be increased to 2+ for high availability across availability zones
+- Single task instance (`desiredCount: 1`) for cost efficiency - can be increased to 2+ for high availability
 - No auto-scaling configured (code included but commented out in `cdk-stack.ts`)
 - No automated testing
 

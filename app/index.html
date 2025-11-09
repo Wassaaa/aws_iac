@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Portfolio Risk Calculator</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        max-width: 600px;
+        margin: 50px auto;
+        padding: 20px;
+        background-color: #f5f5f5;
+      }
+
+      .container {
+        background: white;
+        padding: 30px;
+        border-radius: 5px;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+      }
+
+      h1 {
+        color: #333;
+        margin-bottom: 20px;
+      }
+
+      label {
+        display: block;
+        margin-bottom: 5px;
+        font-weight: bold;
+      }
+
+      input {
+        width: 100%;
+        padding: 8px;
+        margin-bottom: 15px;
+        border: 1px solid #ddd;
+        border-radius: 3px;
+        font-size: 14px;
+      }
+
+      button {
+        background-color: #007bff;
+        color: white;
+        padding: 10px 20px;
+        border: none;
+        border-radius: 3px;
+        cursor: pointer;
+        font-size: 14px;
+      }
+
+      button:hover {
+        background-color: #0056b3;
+      }
+
+      button:disabled {
+        background-color: #ccc;
+        cursor: not-allowed;
+      }
+
+      #result {
+        margin-top: 20px;
+        padding: 15px;
+        background-color: #e7f3ff;
+        border-left: 4px solid #007bff;
+        display: none;
+      }
+
+      #result.show {
+        display: block;
+      }
+
+      .error {
+        margin-top: 20px;
+        padding: 15px;
+        background-color: #ffe7e7;
+        border-left: 4px solid #dc3545;
+        display: none;
+      }
+
+      .error.show {
+        display: block;
+      }
+
+      .info {
+        margin-top: 30px;
+        padding: 15px;
+        background-color: #f8f9fa;
+        border-radius: 3px;
+        font-size: 13px;
+        color: #666;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>Portfolio Risk Calculator</h1>
+
+      <form id="form">
+        <label for="expectedReturn">Expected Annual Return (%):</label>
+        <input
+          type="number"
+          id="expectedReturn"
+          step="0.1"
+          placeholder="e.g., 8.0"
+          required
+        />
+
+        <label for="volatility">Annual Volatility / Std Dev (%):</label>
+        <input
+          type="number"
+          id="volatility"
+          step="0.1"
+          min="0.1"
+          placeholder="e.g., 15.0"
+          required
+        />
+
+        <label for="confidence">Confidence Level (%):</label>
+        <input
+          type="number"
+          id="confidence"
+          step="0.01"
+          min="0.01"
+          max="99.99"
+          placeholder="e.g., 95.0"
+          required
+        />
+
+        <button type="submit" id="submitBtn">Calculate Range</button>
+      </form>
+      <div id="result">
+        <strong>Confidence Interval:</strong><br />
+        <span id="resultValue"></span>
+      </div>
+
+      <div id="error" class="error"></div>
+
+      <div class="info">
+        <p><strong>What does this do?</strong></p>
+        <p>
+          Calculates a confidence interval for portfolio returns using the
+          normal distribution.
+        </p>
+        <p>
+          Based on your expected return and volatility, it shows the range where
+          your actual return is likely to fall.
+        </p>
+        <p>
+          <strong>Example:</strong> 8% return, 15% volatility, 95% confidence →
+          roughly -16% to +32%
+        </p>
+      </div>
+    </div>
+
+    <script>
+      const form = document.getElementById("form");
+      const resultDiv = document.getElementById("result");
+      const resultValue = document.getElementById("resultValue");
+      const errorDiv = document.getElementById("error");
+      const submitBtn = document.getElementById("submitBtn");
+
+      form.addEventListener("submit", async (e) => {
+        e.preventDefault();
+
+        const expectedReturn = parseFloat(
+          document.getElementById("expectedReturn").value
+        );
+        const volatility = parseFloat(
+          document.getElementById("volatility").value
+        );
+        const confidence = parseFloat(
+          document.getElementById("confidence").value
+        );
+
+        resultDiv.classList.remove("show");
+        errorDiv.classList.remove("show");
+
+        if (confidence <= 0 || confidence >= 100) {
+          showError("Confidence level must be between 0 and 100");
+          return;
+        }
+
+        if (volatility <= 0) {
+          showError("Volatility must be positive");
+          return;
+        }
+
+        submitBtn.disabled = true;
+        submitBtn.textContent = "Calculating...";
+
+        try {
+          const response = await fetch("/api/probit", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ probability: confidence }),
+          });
+
+          const data = await response.json();
+
+          if (!response.ok) {
+            throw new Error(data.error || "Calculation failed");
+          }
+
+          const zScore = data.z_score;
+          const margin = zScore * volatility;
+          const lowerBound = expectedReturn - margin;
+          const upperBound = expectedReturn + margin;
+
+          resultValue.innerHTML =
+            `With <strong>${confidence}%</strong> confidence, your annual return will be between ` +
+            `<strong>${lowerBound.toFixed(
+              2
+            )}%</strong> and <strong>${upperBound.toFixed(2)}%</strong><br>` +
+            `<small style="color: #666; margin-top: 8px; display: block;">(z-score: ${zScore.toFixed(
+              4
+            )})</small>`;
+          resultDiv.classList.add("show");
+        } catch (error) {
+          showError(error.message);
+        } finally {
+          submitBtn.disabled = false;
+          submitBtn.textContent = "Calculate Range";
+        }
+      });
+
+      function showError(message) {
+        errorDiv.textContent = "Error: " + message;
+        errorDiv.classList.add("show");
+      }
+    </script>
+  </body>
+</html>

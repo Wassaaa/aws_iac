@@ -1,14 +1,22 @@
-# Welcome to your CDK TypeScript project
+# CDK Infrastructure
 
-This is a blank project for CDK development with TypeScript.
+This directory contains the AWS CDK (TypeScript) infrastructure code for deploying the portfolio risk calculator to AWS.
 
-The `cdk.json` file tells the CDK Toolkit how to execute your app.
+## What This Deploys
 
-## Useful commands
+- **VPC**: Default VPC with public/private subnets
+- **ECS Fargate Service**: Runs the Docker container (0.25 vCPU, 512 MB memory)
+- **Application Load Balancer**: Public-facing HTTP endpoint
+- **ECR**: Container registry for Docker images
+- **Security Groups**: Configured for HTTP traffic
 
-* `npm run build`   compile typescript to js
-* `npm run watch`   watch for changes and compile
-* `npm run test`    perform the jest unit tests
-* `npx cdk deploy`  deploy this stack to your default AWS account/region
-* `npx cdk diff`    compare deployed stack with current state
-* `npx cdk synth`   emits the synthesized CloudFormation template
+The stack is defined in `lib/cdk-stack.ts` and uses a single Fargate task (`desiredCount: 1`) for cost efficiency.
+
+## Commands
+
+- `npm install` install dependencies
+- `npx cdk bootstrap` one-time setup per AWS account/region
+- `npx cdk deploy` deploy this stack to your default AWS account/region
+- `npx cdk destroy` tear down all resources
+- `npx cdk diff` compare deployed stack with current state
+- `npx cdk synth` emits the synthesized CloudFormation template

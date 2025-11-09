@@ -46,7 +46,7 @@ A web application demonstrating frontend-backend communication and AWS deploymen
 - **AWS Account** (free tier: https://aws.amazon.com/free/)
 - **Node.js 24 (LTS)** - https://nodejs.org/en/download
 - **Docker Desktop** - https://docs.docker.com/engine/install/
-- **AWS CLI** - https://aws.amazon.com/cli/
+- **AWS CLI v2** - https://aws.amazon.com/cli/
 
 **Optional - Nix users:** Run `nix develop` to get all tools automatically.
 
